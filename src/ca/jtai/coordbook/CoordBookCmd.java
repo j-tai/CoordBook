@@ -10,12 +10,17 @@ import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class CoordBookCmd implements CommandExecutor {
+public class CoordBookCmd implements CommandExecutor, TabCompleter {
     private final Book book;
 
     public CoordBookCmd(Book book) {
@@ -157,5 +162,38 @@ public class CoordBookCmd implements CommandExecutor {
         entries.remove(name);
         book.setDirty();
         player.sendMessage(ChatColor.GREEN + "Removed the entry '" + name + "'.");
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
+        if (!(sender instanceof Player))
+            return Collections.emptyList();
+        switch (args.length) {
+            case 0:
+                throw new AssertionError("Unreachable code");
+            case 1: {
+                String partial = args[0].toLowerCase();
+                return Stream.of("list", "add", "remove")
+                        .filter(s -> s.toLowerCase().startsWith(partial))
+                        .collect(Collectors.toList());
+            }
+            default:
+                if ("list".equalsIgnoreCase(args[0])) {
+                    return Collections.emptyList();
+                } else if ("add".equalsIgnoreCase(args[0])) {
+                    return Collections.emptyList();
+                } else if ("remove".equalsIgnoreCase(args[0])) {
+                    String world = ((Player) sender).getWorld().getName();
+                    String partial = String.join(" ", Arrays.copyOfRange(args, 1, args.length))
+                            .toLowerCase();
+                    return book.get(world)
+                            .keySet()
+                            .stream()
+                            .filter(arg -> arg.toLowerCase().startsWith(partial))
+                            .collect(Collectors.toList());
+                } else {
+                    return Collections.emptyList();
+                }
+        }
     }
 }
