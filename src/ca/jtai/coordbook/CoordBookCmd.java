@@ -37,12 +37,14 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         }
         Player player = (Player) sender;
         if (args.length == 0) {
-            list(player, label, args);
+            list(player, label, "list", args, false);
         } else {
             String subcommand = args[0];
             String[] subargs = Arrays.copyOfRange(args, 1, args.length);
             if ("list".equals(subcommand))
-                list(player, label, subargs);
+                list(player, label, subcommand, subargs, false);
+            else if ("edit".equals(subcommand))
+                list(player, label, subcommand, subargs, true);
             else if ("add".equals(subcommand))
                 add(player, label, subargs);
             else if ("remove".equals(subcommand))
@@ -66,6 +68,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
     private void help(Player player, String label) {
         player.sendMessage(ChatColor.RED + "Usage:");
         player.sendMessage(ChatColor.RED + "    /" + label + " [list]");
+        player.sendMessage(ChatColor.RED + "    /" + label + " edit");
         player.sendMessage(ChatColor.RED + "    /" + label + " add NAME");
         player.sendMessage(ChatColor.RED + "    /" + label + " remove NAME");
     }
@@ -76,7 +79,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         return component;
     }
 
-    private void list(Player player, String label, String[] args) {
+    private void list(Player player, String label, String sublabel, String[] args, boolean showEditButtons) {
         Book book = database.get(player.getWorld().getName());
         if (book.isEmpty()) {
             player.sendMessage(ChatColor.YELLOW + "This world's coordinate book is empty.");
@@ -102,7 +105,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
             BaseComponent leftArrow = new TextComponent("←");
             if (page != 0) {
                 leftArrow.setColor(ChatColor.AQUA);
-                String prevPageCommand = "/" + label + " list " + page;
+                String prevPageCommand = "/" + label + " " + sublabel + " " + page;
                 leftArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, prevPageCommand));
                 leftArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                         new TextComponent[]{new TextComponent("Go to the previous page")}));
@@ -114,7 +117,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
             BaseComponent rightArrow = new TextComponent("→");
             if (page != totalPages - 1) {
                 rightArrow.setColor(ChatColor.AQUA);
-                String nextPageCommand = "/" + label + " list " + (page + 2);
+                String nextPageCommand = "/" + label + " " + sublabel + " " + (page + 2);
                 rightArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, nextPageCommand));
                 rightArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                         new TextComponent[]{new TextComponent("Go to the next page")}));
@@ -145,22 +148,24 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 .forEach(name -> {
                     Entry entry = book.get(name);
                     BaseComponent msg = new TextComponent();
-                    // Delete button
-                    BaseComponent msgDelete = colored(ChatColor.RED, "x");
-                    msgDelete.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new TextComponent[]{new TextComponent("Delete entry")}));
-                    msgDelete.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                            "/" + label + " remove " + name));
-                    msg.addExtra(msgDelete);
-                    // Pin button
-                    BaseComponent pinButton = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.DARK_GRAY, "+");
-                    pinButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new TextComponent[]{new TextComponent(entry.isPinned() ? "Unpin entry" : "Pin entry")}));
-                    pinButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                            "/" + label + " toggle-pin " + name));
-                    msg.addExtra(pinButton);
-                    // Space
-                    msg.addExtra(" ");
+                    if (showEditButtons) {
+                        // Delete button
+                        BaseComponent deleteButton = colored(ChatColor.RED, "x");
+                        deleteButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                new TextComponent[]{new TextComponent("Delete entry")}));
+                        deleteButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
+                                "/" + label + " remove " + name));
+                        msg.addExtra(deleteButton);
+                        // Pin button
+                        BaseComponent pinButton = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.DARK_GRAY, "+");
+                        pinButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                new TextComponent[]{new TextComponent(entry.isPinned() ? "Unpin entry" : "Pin entry")}));
+                        pinButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
+                                "/" + label + " toggle-pin " + name));
+                        msg.addExtra(pinButton);
+                        // Space
+                        msg.addExtra(" ");
+                    }
                     // Name of the entry
                     BaseComponent msgName = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.YELLOW, name);
                     String author = Bukkit.getServer().getOfflinePlayer(entry.getAuthor()).getName();
@@ -251,12 +256,14 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 throw new AssertionError("Unreachable code");
             case 1: {
                 String partial = args[0].toLowerCase();
-                return Stream.of("list", "add", "remove")
+                return Stream.of("list", "edit", "add", "remove")
                         .filter(s -> s.toLowerCase().startsWith(partial))
                         .collect(Collectors.toList());
             }
             default:
                 if ("list".equalsIgnoreCase(args[0])) {
+                    return Collections.emptyList();
+                } else if ("edit".equalsIgnoreCase(args[0])) {
                     return Collections.emptyList();
                 } else if ("add".equalsIgnoreCase(args[0])) {
                     return Collections.emptyList();
