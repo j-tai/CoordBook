@@ -4,8 +4,6 @@ import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.io.File;
-
 public class Main extends JavaPlugin {
     private Book book;
 
@@ -14,8 +12,8 @@ public class Main extends JavaPlugin {
         ConfigurationSerialization.registerClass(Entry.class);
 
         book = new Book();
-        int loaded = book.load(getBookFolder());
-        getLogger().info("Loaded " + loaded + " entries.");
+        book.load(getDataFolder());
+        getLogger().info("Data loaded successfully.");
 
         getCommand("coordbook").setExecutor(new CoordBookCmd(book));
 
@@ -23,20 +21,13 @@ public class Main extends JavaPlugin {
         new BukkitRunnable() {
             @Override
             public void run() {
-                int saved = book.save(getBookFolder());
-                if (saved != 0)
-                    getLogger().info("Saved " + saved + " entries.");
+                book.save(getDataFolder());
             }
         }.runTaskTimer(this, 5 * 60 * 20, 5 * 60 * 20);
     }
 
     public void onDisable() {
-        int saved = book.save(getBookFolder());
-        if (saved != 0)
-            getLogger().info("Saved " + saved + " entries.");
-    }
-
-    private File getBookFolder() {
-        return new File(getDataFolder(), "coords");
+        book.save(getDataFolder());
+        getLogger().info("Data saved successfully.");
     }
 }

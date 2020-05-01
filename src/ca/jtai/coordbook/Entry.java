@@ -16,6 +16,7 @@ public class Entry implements ConfigurationSerializable {
     private final int x, y, z;
     private final long dateAdded;
     private final UUID author;
+    private boolean isPinned;
 
     private Entry(int x, int y, int z, long dateAdded, UUID author) {
         Objects.requireNonNull(author);
@@ -52,6 +53,14 @@ public class Entry implements ConfigurationSerializable {
 
     public UUID getAuthor() {
         return author;
+    }
+
+    public boolean isPinned() {
+        return isPinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        isPinned = pinned;
     }
 
     public Location toLocation(World world) {
