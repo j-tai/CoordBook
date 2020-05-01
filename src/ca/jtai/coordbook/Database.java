@@ -9,7 +9,6 @@ import java.util.Objects;
  */
 public class Database {
     private final HashMap<String, Book> map = new HashMap<>();
-    private boolean dirty = false;
 
     public Book get(String world) {
         return map.computeIfAbsent(world, k -> new Book());
@@ -32,8 +31,6 @@ public class Database {
     }
 
     public void save(File folder) {
-        if (!dirty)
-            return;
         folder.mkdirs();
         // Save coordinates
         File coordFolder = new File(folder, "coords");
@@ -42,14 +39,5 @@ public class Database {
             Book book = map.get(worldName);
             book.save(new File(coordFolder, worldName + ".yml"));
         }
-        dirty = false;
-    }
-
-    public boolean isDirty() {
-        return dirty;
-    }
-
-    public void setDirty() {
-        this.dirty = true;
     }
 }

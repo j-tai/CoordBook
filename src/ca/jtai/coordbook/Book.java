@@ -12,20 +12,24 @@ import java.util.*;
  */
 public class Book {
     private final HashMap<String, Entry> map = new HashMap<>();
+    private boolean dirty = true;
 
     public Entry get(String name) {
         return map.get(name);
     }
 
     public void put(String name, Entry entry) {
+        dirty = true;
         map.put(name, entry);
     }
 
     public boolean remove(String name) {
+        dirty = true;
         return map.remove(name) != null;
     }
 
     public void clear() {
+        dirty = true;
         map.clear();
     }
 
@@ -74,9 +78,12 @@ public class Book {
         } catch (InvalidConfigurationException | IOException e) {
             e.printStackTrace();
         }
+        dirty = false;
     }
 
     public void save(File file) {
+        if (!dirty)
+            return;
         YamlConfiguration config = new YamlConfiguration();
         config.options().pathSeparator('\0');
 
@@ -97,5 +104,6 @@ public class Book {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        dirty = false;
     }
 }

@@ -182,7 +182,6 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
             return;
         }
         book.put(name, new Entry(player.getLocation(), player.getUniqueId()));
-        database.setDirty();
         player.sendMessage(ChatColor.GREEN + "Added an entry '" + name + "' at your current location.");
     }
 
@@ -205,7 +204,6 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 return;
         }
         book.remove(name);
-        database.setDirty();
         player.sendMessage(ChatColor.GREEN + "Removed the entry '" + name + "'.");
     }
 
