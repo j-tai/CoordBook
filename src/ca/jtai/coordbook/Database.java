@@ -30,18 +30,8 @@ public class Database {
             // Trim off ".yml"
             String worldName = filename.substring(0, filename.length() - 4);
             Book book = new Book();
+            book.load(new File(coordFolder, filename));
             map.put(worldName, book);
-            // Read the file
-            File file = new File(coordFolder, filename);
-            try {
-                YamlConfiguration config = new YamlConfiguration();
-                config.load(file);
-                for (String key : config.getKeys(false)) {
-                    book.put(key, config.getObject(key, Entry.class));
-                }
-            } catch (InvalidConfigurationException | IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -54,17 +44,7 @@ public class Database {
         coordFolder.mkdirs();
         for (String worldName : map.keySet()) {
             Book book = map.get(worldName);
-            YamlConfiguration config = new YamlConfiguration();
-            for (String name : book.getNames()) {
-                Entry entry = book.get(name);
-                config.set(name, entry);
-            }
-            config.options().indent(2);
-            try {
-                config.save(new File(coordFolder, worldName + ".yml"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            book.save(new File(coordFolder, worldName + ".yml"));
         }
         dirty = false;
     }
