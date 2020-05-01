@@ -22,10 +22,10 @@ import java.util.stream.Stream;
 public class CoordBookCmd implements CommandExecutor, TabCompleter {
     private static final int ENTRIES_PER_PAGE = 10;
 
-    private final Book book;
+    private final Database database;
 
-    public CoordBookCmd(Book book) {
-        this.book = book;
+    public CoordBookCmd(Database database) {
+        this.database = database;
     }
 
     @Override
@@ -74,13 +74,13 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
     }
 
     private void list(Player player, String label, String[] args) {
-        LocalBook entries = book.get(player.getWorld().getName());
-        if (entries.isEmpty()) {
+        Book book = database.get(player.getWorld().getName());
+        if (book.isEmpty()) {
             player.sendMessage(ChatColor.YELLOW + "This world's coordinate book is empty.");
             return;
         }
 
-        int totalPages = (entries.size() + (ENTRIES_PER_PAGE - 1)) / ENTRIES_PER_PAGE;
+        int totalPages = (book.size() + (ENTRIES_PER_PAGE - 1)) / ENTRIES_PER_PAGE;
         int page = 0;
         if (args.length > 0) {
             try {
@@ -125,7 +125,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
 
         Location location = player.getLocation();
 
-        entries.getEntries()
+        book.getEntries()
                 .stream()
                 .sorted((left, right) -> {
                     Location leftLoc = left.getValue().toLocation(location.getWorld());
@@ -176,13 +176,13 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         if (!checkPermission(player, "coordbook.add"))
             return;
         String name = String.join(" ", args);
-        LocalBook entries = book.get(player.getWorld().getName());
-        if (entries.has(name)) {
+        Book book = database.get(player.getWorld().getName());
+        if (book.has(name)) {
             player.sendMessage(ChatColor.RED + "An entry with the name '" + name + "' already exists.");
             return;
         }
-        entries.put(name, new Entry(player.getLocation(), player.getUniqueId()));
-        book.setDirty();
+        book.put(name, new Entry(player.getLocation(), player.getUniqueId()));
+        database.setDirty();
         player.sendMessage(ChatColor.GREEN + "Added an entry '" + name + "' at your current location.");
     }
 
@@ -194,8 +194,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         if (!checkPermission(player, "coordbook.remove"))
             return;
         String name = String.join(" ", args);
-        LocalBook entries = book.get(player.getWorld().getName());
-        Entry entry = entries.get(name);
+        Book book = database.get(player.getWorld().getName());
+        Entry entry = book.get(name);
         if (entry == null) {
             player.sendMessage(ChatColor.RED + "The entry '" + name + "' does not exist.");
             return;
@@ -204,8 +204,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
             if (!checkPermission(player, "coordbook.remove.other"))
                 return;
         }
-        entries.remove(name);
-        book.setDirty();
+        book.remove(name);
+        database.setDirty();
         player.sendMessage(ChatColor.GREEN + "Removed the entry '" + name + "'.");
     }
 
@@ -231,7 +231,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     String world = ((Player) sender).getWorld().getName();
                     String partial = String.join(" ", Arrays.copyOfRange(args, 1, args.length))
                             .toLowerCase();
-                    return book.get(world)
+                    return database.get(world)
                             .getNames()
                             .stream()
                             .filter(arg -> arg.toLowerCase().startsWith(partial))

@@ -5,29 +5,29 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class Main extends JavaPlugin {
-    private Book book;
+    private Database database;
 
     @Override
     public void onEnable() {
         ConfigurationSerialization.registerClass(Entry.class);
 
-        book = new Book();
-        book.load(getDataFolder());
+        database = new Database();
+        database.load(getDataFolder());
         getLogger().info("Data loaded successfully.");
 
-        getCommand("coordbook").setExecutor(new CoordBookCmd(book));
+        getCommand("coordbook").setExecutor(new CoordBookCmd(database));
 
         // Save every 5 minutes
         new BukkitRunnable() {
             @Override
             public void run() {
-                book.save(getDataFolder());
+                database.save(getDataFolder());
             }
         }.runTaskTimer(this, 5 * 60 * 20, 5 * 60 * 20);
     }
 
     public void onDisable() {
-        book.save(getDataFolder());
+        database.save(getDataFolder());
         getLogger().info("Data saved successfully.");
     }
 }

@@ -1,79 +1,44 @@
 package ca.jtai.coordbook;
 
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Objects;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * Manages the list of coordinates in the book.
+ * A world-local coordinate book.
  */
 public class Book {
-    private final HashMap<String, LocalBook> map = new HashMap<>();
-    private boolean dirty = false;
+    private final HashMap<String, Entry> map = new HashMap<>();
 
-    public LocalBook get(String world) {
-        return map.computeIfAbsent(world, k -> new LocalBook());
+    public Entry get(String name) {
+        return map.get(name);
     }
 
-    public void load(File folder) {
-        folder.mkdirs();
-        // Load coordinates
-        File coordFolder = new File(folder, "coords");
-        coordFolder.mkdirs();
-        for (String filename : Objects.requireNonNull(coordFolder.list())) {
-            if (!filename.endsWith(".yml"))
-                continue;
-            // Trim off ".yml"
-            String worldName = filename.substring(0, filename.length() - 4);
-            LocalBook world = new LocalBook();
-            map.put(worldName, world);
-            // Read the file
-            File file = new File(coordFolder, filename);
-            try {
-                YamlConfiguration config = new YamlConfiguration();
-                config.load(file);
-                for (String key : config.getKeys(false)) {
-                    world.put(key, config.getObject(key, Entry.class));
-                }
-            } catch (InvalidConfigurationException | IOException e) {
-                e.printStackTrace();
-            }
-        }
+    public void put(String name, Entry entry) {
+        map.put(name, entry);
     }
 
-    public void save(File folder) {
-        if (!dirty)
-            return;
-        folder.mkdirs();
-        // Save coordinates
-        File coordFolder = new File(folder, "coords");
-        coordFolder.mkdirs();
-        for (String worldName : map.keySet()) {
-            LocalBook world = map.get(worldName);
-            YamlConfiguration config = new YamlConfiguration();
-            for (String name : world.getNames()) {
-                Entry entry = world.get(name);
-                config.set(name, entry);
-            }
-            config.options().indent(2);
-            try {
-                config.save(new File(coordFolder, worldName + ".yml"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        dirty = false;
+    public boolean remove(String name) {
+        return map.remove(name) != null;
     }
 
-    public boolean isDirty() {
-        return dirty;
+    public boolean has(String name) {
+        return map.containsKey(name);
     }
 
-    public void setDirty() {
-        this.dirty = true;
+    public Set<String> getNames() {
+        return map.keySet();
+    }
+
+    public Set<Map.Entry<String, Entry>> getEntries() {
+        return map.entrySet();
+    }
+
+    public int size() {
+        return map.size();
+    }
+
+    public boolean isEmpty() {
+        return size() == 0;
     }
 }
