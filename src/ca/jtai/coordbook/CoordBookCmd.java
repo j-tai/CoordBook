@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CoordBookCmd implements CommandExecutor, TabCompleter {
+    private static final int ENTRIES_PER_PAGE = 10;
+
     private final Book book;
 
     public CoordBookCmd(Book book) {
@@ -79,7 +81,48 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
             return;
         }
 
-        player.sendMessage(ChatColor.GOLD + "----- Coordinate Book -----");
+        int totalPages = (entries.size() + (ENTRIES_PER_PAGE - 1)) / ENTRIES_PER_PAGE;
+        int page = 0;
+        if (args.length > 0) {
+            try {
+                page = Integer.parseInt(args[0]) - 1;
+            } catch (NumberFormatException ignored) {}
+            if (page < 0 || page >= totalPages) {
+                page = 0;
+            }
+        }
+
+        // Send the Coordinate Book heading
+        {
+            BaseComponent heading = new TextComponent("----- Coordinate Book ");
+            heading.setColor(ChatColor.GOLD);
+            BaseComponent leftArrow = new TextComponent("←");
+            if (page != 0) {
+                leftArrow.setColor(ChatColor.AQUA);
+                String prevPageCommand = "/" + label + " list " + page;
+                leftArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, prevPageCommand));
+                leftArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        new TextComponent[]{new TextComponent("Go to the previous page")}));
+            } else {
+                leftArrow.setColor(ChatColor.GRAY);
+            }
+            heading.addExtra(leftArrow);
+            heading.addExtra(" " + (page + 1) + "/" + totalPages + " ");
+            BaseComponent rightArrow = new TextComponent("→");
+            if (page != totalPages - 1) {
+                rightArrow.setColor(ChatColor.AQUA);
+                String nextPageCommand = "/" + label + " list " + (page + 2);
+                rightArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, nextPageCommand));
+                rightArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        new TextComponent[]{new TextComponent("Go to the next page")}));
+            } else {
+                rightArrow.setColor(ChatColor.GRAY);
+            }
+            heading.addExtra(rightArrow);
+            heading.addExtra(" -----");
+            player.spigot().sendMessage(heading);
+        }
+
         Location location = player.getLocation();
 
         entries.entrySet()
@@ -87,8 +130,10 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 .sorted((left, right) -> {
                     Location leftLoc = left.getValue().toLocation(location.getWorld());
                     Location rightLoc = right.getValue().toLocation(location.getWorld());
-                    return Double.compare(location.distanceSquared(rightLoc), location.distanceSquared(leftLoc));
+                    return Double.compare(location.distanceSquared(leftLoc), location.distanceSquared(rightLoc));
                 })
+                .skip(page * ENTRIES_PER_PAGE)
+                .limit(ENTRIES_PER_PAGE)
                 .forEach(ent -> {
                     String name = ent.getKey();
                     Entry entry = ent.getValue();
