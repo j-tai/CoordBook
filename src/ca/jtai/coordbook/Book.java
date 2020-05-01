@@ -5,9 +5,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A world-local coordinate book.
@@ -56,8 +54,22 @@ public class Book {
         try {
             YamlConfiguration config = new YamlConfiguration();
             config.load(file);
-            for (String key : config.getKeys(false)) {
-                put(key, config.getObject(key, Entry.class));
+            config.options().pathSeparator('\0');
+
+            int version = config.getInt("version", 0);
+            switch (version) {
+                case 0:
+                    for (String key : config.getKeys(false)) {
+                        put(key, config.getObject(key, Entry.class));
+                    }
+                    break;
+                case 1:
+                    for (Map<?, ?> map : config.getMapList("entries")) {
+                        put((String) map.get("name"), (Entry) map.get("entry"));
+                    }
+                    break;
+                default:
+                    throw new IOException("Unknown version number " + version);
             }
         } catch (InvalidConfigurationException | IOException e) {
             e.printStackTrace();
@@ -66,10 +78,19 @@ public class Book {
 
     public void save(File file) {
         YamlConfiguration config = new YamlConfiguration();
-        for (String name : getNames()) {
-            Entry entry = get(name);
-            config.set(name, entry);
+        config.options().pathSeparator('\0');
+
+        config.set("version", 1);
+        // Save entries
+        List<Map<String, Object>> entries = new ArrayList<>();
+        for (Map.Entry<String, Entry> entry : getEntries()) {
+            HashMap<String, Object> map = new HashMap<>();
+            map.put("name", entry.getKey());
+            map.put("entry", entry.getValue());
+            entries.add(map);
         }
+        config.set("entries", entries);
+
         config.options().indent(2);
         try {
             config.save(file);
