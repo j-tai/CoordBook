@@ -162,7 +162,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     // Space
                     msg.addExtra(" ");
                     // Name of the entry
-                    BaseComponent msgName = colored(ChatColor.YELLOW, name);
+                    BaseComponent msgName = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.YELLOW, name);
                     String author = Bukkit.getServer().getOfflinePlayer(entry.getAuthor()).getName();
                     if (author == null)
                         author = entry.getAuthor().toString(); // Display the raw UUID
