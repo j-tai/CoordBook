@@ -161,8 +161,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 BaseComponent pinButton = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.DARK_GRAY, "+");
                 pinButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                         new TextComponent[]{new TextComponent(entry.isPinned() ? "Unpin entry" : "Pin entry")}));
-                pinButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                        "/" + label + " toggle-pin " + name));
+                pinButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                        "/" + label + " toggle-pin " + (page + 1) + " " + name));
                 msg.addExtra(pinButton);
                 // Up/down arrows to change order of pinned
                 if (entry.isPinned()) {
@@ -244,24 +244,20 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
     }
 
     private void togglePin(Player player, String label, String[] args) {
-        if (args.length == 0) {
+        if (args.length < 2) {
             help(player, label);
             return;
         }
         if (!checkPermission(player, "coordbook.pin"))
             return;
-        String name = String.join(" ", args);
+        String name = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
         Book book = database.get(player.getWorld().getName());
         if (!book.has(name)) {
             player.sendMessage(ChatColor.RED + "The entry '" + name + "' does not exist.");
             return;
         }
-        boolean pinned = book.togglePinned(name);
-        if (pinned) {
-            player.sendMessage(ChatColor.GREEN + "The entry '" + name + "' has been pinned.");
-        } else {
-            player.sendMessage(ChatColor.GREEN + "The entry '" + name + "' has been unpinned.");
-        }
+        book.togglePinned(name);
+        list(player, label, "edit", new String[]{args[0]}, true);
     }
 
     private void swapPin(Player player, String label, String[] args) {
