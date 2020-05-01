@@ -13,5 +13,6 @@ commands:
 
 permissions:
   coordbook.add: { default: true }
+  coordbook.pin: { default: op }
   coordbook.remove: { default: true }
   coordbook.remove.other: { default: op }
