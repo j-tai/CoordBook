@@ -51,6 +51,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 remove(player, label, subargs);
             else if ("toggle-pin".equals(subcommand))
                 togglePin(player, label, subargs);
+            else if ("swap-pin".equals(subcommand))
+                swapPin(player, label, subargs);
             else
                 help(player, label);
         }
@@ -131,7 +133,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
 
         Location location = player.getLocation();
 
-        Stream.concat(
+        List<String> entries = Stream.concat(
                 book.getPinned().stream(),
                 book.getEntries()
                         .stream()
@@ -142,49 +144,64 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                             return Double.compare(location.distanceSquared(leftLoc), location.distanceSquared(rightLoc));
                         })
                         .map(Map.Entry::getKey)
-        )
-                .skip(page * ENTRIES_PER_PAGE)
-                .limit(ENTRIES_PER_PAGE)
-                .forEach(name -> {
-                    Entry entry = book.get(name);
-                    BaseComponent msg = new TextComponent();
-                    if (showEditButtons) {
-                        // Delete button
-                        BaseComponent deleteButton = colored(ChatColor.RED, "x");
-                        deleteButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                new TextComponent[]{new TextComponent("Delete entry")}));
-                        deleteButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                                "/" + label + " remove " + name));
-                        msg.addExtra(deleteButton);
-                        // Pin button
-                        BaseComponent pinButton = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.DARK_GRAY, "+");
-                        pinButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                new TextComponent[]{new TextComponent(entry.isPinned() ? "Unpin entry" : "Pin entry")}));
-                        pinButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                                "/" + label + " toggle-pin " + name));
-                        msg.addExtra(pinButton);
-                        // Space
-                        msg.addExtra(" ");
+        ).collect(Collectors.toList());
+        for (int i = page * ENTRIES_PER_PAGE; i < Math.min((page + 1) * ENTRIES_PER_PAGE, entries.size()); i++) {
+            String name = entries.get(i);
+            Entry entry = book.get(name);
+            BaseComponent msg = new TextComponent();
+            if (showEditButtons) {
+                // Delete button
+                BaseComponent deleteButton = colored(ChatColor.RED, "x");
+                deleteButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        new TextComponent[]{new TextComponent("Delete entry")}));
+                deleteButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
+                        "/" + label + " remove " + name));
+                msg.addExtra(deleteButton);
+                // Pin button
+                BaseComponent pinButton = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.DARK_GRAY, "+");
+                pinButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        new TextComponent[]{new TextComponent(entry.isPinned() ? "Unpin entry" : "Pin entry")}));
+                pinButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
+                        "/" + label + " toggle-pin " + name));
+                msg.addExtra(pinButton);
+                // Up/down arrows to change order of pinned
+                if (entry.isPinned()) {
+                    BaseComponent upButton = colored(i == 0 ? ChatColor.DARK_GRAY : ChatColor.AQUA, "↑");
+                    if (i != 0) {
+                        upButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                                "/" + label + " swap-pin " + i + " " + (i - 1) + " " + String.join(" ", args)));
                     }
-                    // Name of the entry
-                    BaseComponent msgName = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.YELLOW, name);
-                    String author = Bukkit.getServer().getOfflinePlayer(entry.getAuthor()).getName();
-                    if (author == null)
-                        author = entry.getAuthor().toString(); // Display the raw UUID
-                    msgName.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new TextComponent[]{new TextComponent("Added by " + author)}));
-                    msg.addExtra(msgName);
-                    // Coordinates
-                    msg.addExtra(": ");
-                    msg.addExtra(entry.getX() + ", " + entry.getY() + ", " + entry.getZ());
-                    // Distance
-                    msg.addExtra(" ");
-                    msg.addExtra(colored(ChatColor.DARK_RED, "("));
-                    int dist = (int) Math.round(location.distance(entry.toLocation(location.getWorld())));
-                    msg.addExtra(colored(ChatColor.RED, dist + "m"));
-                    msg.addExtra(colored(ChatColor.DARK_RED, ")"));
-                    player.spigot().sendMessage(msg);
-                });
+                    msg.addExtra(upButton);
+                    boolean isLastPinned = i == book.getPinned().size() - 1;
+                    BaseComponent downButton = colored(isLastPinned ? ChatColor.DARK_GRAY : ChatColor.AQUA, "↓");
+                    if (!isLastPinned) {
+                        downButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                                "/" + label + " swap-pin " + i + " " + (i + 1) + " " + String.join(" ", args)));
+                    }
+                    msg.addExtra(downButton);
+                }
+                // Space
+                msg.addExtra(" ");
+            }
+            // Name of the entry
+            BaseComponent msgName = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.YELLOW, name);
+            String author = Bukkit.getServer().getOfflinePlayer(entry.getAuthor()).getName();
+            if (author == null)
+                author = entry.getAuthor().toString(); // Display the raw UUID
+            msgName.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                    new TextComponent[]{new TextComponent("Added by " + author)}));
+            msg.addExtra(msgName);
+            // Coordinates
+            msg.addExtra(": ");
+            msg.addExtra(entry.getX() + ", " + entry.getY() + ", " + entry.getZ());
+            // Distance
+            msg.addExtra(" ");
+            msg.addExtra(colored(ChatColor.DARK_RED, "("));
+            int dist = (int) Math.round(location.distance(entry.toLocation(location.getWorld())));
+            msg.addExtra(colored(ChatColor.RED, dist + "m"));
+            msg.addExtra(colored(ChatColor.DARK_RED, ")"));
+            player.spigot().sendMessage(msg);
+        }
     }
 
     private void add(Player player, String label, String[] args) {
@@ -245,6 +262,31 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         } else {
             player.sendMessage(ChatColor.GREEN + "The entry '" + name + "' has been unpinned.");
         }
+    }
+
+    private void swapPin(Player player, String label, String[] args) {
+        if (args.length < 2) {
+            help(player, label);
+            return;
+        }
+        if (!checkPermission(player, "coordbook.pin"))
+            return;
+        int pos1, pos2;
+        try {
+            pos1 = Integer.parseInt(args[0]);
+            pos2 = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            help(player, label);
+            return;
+        }
+        Book book = database.get(player.getWorld().getName());
+        List<String> pinned = book.getPinned();
+        if (pos1 < 0 || pos1 >= pinned.size() || pos2 < 0 || pos2 >= pinned.size()) {
+            help(player, label);
+            return;
+        }
+        Collections.swap(pinned, pos1, pos2);
+        list(player, label, "edit", Arrays.copyOfRange(args, 2, args.length), true);
     }
 
     @Override
