@@ -18,17 +18,18 @@ public class Entry implements ConfigurationSerializable {
     private final UUID author;
     private boolean isPinned;
 
-    private Entry(int x, int y, int z, long dateAdded, UUID author) {
+    private Entry(int x, int y, int z, long dateAdded, UUID author, boolean isPinned) {
         Objects.requireNonNull(author);
         this.x = x;
         this.y = y;
         this.z = z;
         this.dateAdded = dateAdded;
         this.author = author;
+        this.isPinned = isPinned;
     }
 
     public Entry(int x, int y, int z, UUID author) {
-        this(x, y, z, System.currentTimeMillis(), author);
+        this(x, y, z, System.currentTimeMillis(), author, false);
     }
 
     public Entry(Location location, UUID author) {
@@ -101,7 +102,8 @@ public class Entry implements ConfigurationSerializable {
                 (Integer) map.get("y"),
                 (Integer) map.get("z"),
                 (Long) map.get("date"),
-                UUID.fromString((String) map.get("by"))
+                UUID.fromString((String) map.get("by")),
+                false
         );
     }
 }

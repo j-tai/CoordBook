@@ -11,6 +11,7 @@ import java.util.*;
  * A world-local coordinate book.
  */
 public class Book {
+    private final ArrayList<String> pinned = new ArrayList<>();
     private final HashMap<String, Entry> map = new HashMap<>();
     private boolean dirty = true;
 
@@ -25,11 +26,17 @@ public class Book {
 
     public boolean remove(String name) {
         dirty = true;
-        return map.remove(name) != null;
+        Entry entry = map.remove(name);
+        if (entry == null) return false;
+        if (entry.isPinned()) {
+            pinned.remove(name);
+        }
+        return true;
     }
 
     public void clear() {
         dirty = true;
+        pinned.clear();
         map.clear();
     }
 
@@ -43,6 +50,26 @@ public class Book {
 
     public Set<Map.Entry<String, Entry>> getEntries() {
         return map.entrySet();
+    }
+
+    public List<String> getPinned() {
+        return pinned;
+    }
+
+    public boolean togglePinned(String name) {
+        Entry entry = get(name);
+        if (entry == null)
+            throw new IllegalArgumentException("No such entry '" + name + "'");
+        dirty = true;
+        if (entry.isPinned()) {
+            entry.setPinned(false);
+            pinned.remove(name);
+            return false;
+        } else {
+            entry.setPinned(true);
+            pinned.add(name);
+            return true;
+        }
     }
 
     public int size() {
@@ -71,6 +98,10 @@ public class Book {
                     for (Map<?, ?> map : config.getMapList("entries")) {
                         put((String) map.get("name"), (Entry) map.get("entry"));
                     }
+                    pinned.addAll(config.getStringList("pinned"));
+                    for (String name : pinned) {
+                        get(name).setPinned(true);
+                    }
                     break;
                 default:
                     throw new IOException("Unknown version number " + version);
@@ -97,6 +128,7 @@ public class Book {
             entries.add(map);
         }
         config.set("entries", entries);
+        config.set("pinned", pinned);
 
         config.options().indent(2);
         try {

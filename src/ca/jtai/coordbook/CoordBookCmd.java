@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,6 +47,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 add(player, label, subargs);
             else if ("remove".equals(subcommand))
                 remove(player, label, subargs);
+            else if ("toggle-pin".equals(subcommand))
+                togglePin(player, label, subargs);
             else
                 help(player, label);
         }
@@ -125,18 +128,22 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
 
         Location location = player.getLocation();
 
-        book.getEntries()
-                .stream()
-                .sorted((left, right) -> {
-                    Location leftLoc = left.getValue().toLocation(location.getWorld());
-                    Location rightLoc = right.getValue().toLocation(location.getWorld());
-                    return Double.compare(location.distanceSquared(leftLoc), location.distanceSquared(rightLoc));
-                })
+        Stream.concat(
+                book.getPinned().stream(),
+                book.getEntries()
+                        .stream()
+                        .filter(ent -> !ent.getValue().isPinned())
+                        .sorted((left, right) -> {
+                            Location leftLoc = left.getValue().toLocation(location.getWorld());
+                            Location rightLoc = right.getValue().toLocation(location.getWorld());
+                            return Double.compare(location.distanceSquared(leftLoc), location.distanceSquared(rightLoc));
+                        })
+                        .map(Map.Entry::getKey)
+        )
                 .skip(page * ENTRIES_PER_PAGE)
                 .limit(ENTRIES_PER_PAGE)
-                .forEach(ent -> {
-                    String name = ent.getKey();
-                    Entry entry = ent.getValue();
+                .forEach(name -> {
+                    Entry entry = book.get(name);
                     BaseComponent msg = new TextComponent();
                     // Delete button
                     BaseComponent msgDelete = colored(ChatColor.RED, "x");
@@ -145,6 +152,13 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     msgDelete.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
                             "/" + label + " remove " + name));
                     msg.addExtra(msgDelete);
+                    // Pin button
+                    BaseComponent pinButton = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.DARK_GRAY, "+");
+                    pinButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            new TextComponent[]{new TextComponent(entry.isPinned() ? "Unpin entry" : "Pin entry")}));
+                    pinButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
+                            "/" + label + " toggle-pin " + name));
+                    msg.addExtra(pinButton);
                     // Space
                     msg.addExtra(" ");
                     // Name of the entry
@@ -205,6 +219,27 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         }
         book.remove(name);
         player.sendMessage(ChatColor.GREEN + "Removed the entry '" + name + "'.");
+    }
+
+    private void togglePin(Player player, String label, String[] args) {
+        if (args.length == 0) {
+            help(player, label);
+            return;
+        }
+        if (!checkPermission(player, "coordbook.pin"))
+            return;
+        String name = String.join(" ", args);
+        Book book = database.get(player.getWorld().getName());
+        if (!book.has(name)) {
+            player.sendMessage(ChatColor.RED + "The entry '" + name + "' does not exist.");
+            return;
+        }
+        boolean pinned = book.togglePinned(name);
+        if (pinned) {
+            player.sendMessage(ChatColor.GREEN + "The entry '" + name + "' has been pinned.");
+        } else {
+            player.sendMessage(ChatColor.GREEN + "The entry '" + name + "' has been unpinned.");
+        }
     }
 
     @Override
