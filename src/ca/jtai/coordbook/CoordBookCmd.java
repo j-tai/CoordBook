@@ -81,6 +81,17 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         return component;
     }
 
+    private static String formatDistance(int meters) {
+        if (meters >= 10000) {
+            // Use %.0f instead of %d to round to nearest km instead of truncating
+            return String.format("%.0fkm", meters / 1000.0);
+        } else if (meters >= 1000) {
+            return String.format("%.1fkm", meters / 1000.0);
+        } else {
+            return meters + "m";
+        }
+    }
+
     private void list(Player player, String label, String sublabel, String[] args, boolean showEditButtons) {
         Book book = database.get(player.getWorld().getName());
         if (book.isEmpty()) {
@@ -198,7 +209,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
             msg.addExtra(" ");
             msg.addExtra(colored(ChatColor.DARK_RED, "("));
             int dist = (int) Math.round(location.distance(entry.toLocation(location.getWorld())));
-            msg.addExtra(colored(ChatColor.RED, dist + "m"));
+            msg.addExtra(colored(ChatColor.RED, formatDistance(dist)));
             msg.addExtra(colored(ChatColor.DARK_RED, ")"));
             player.spigot().sendMessage(msg);
         }
