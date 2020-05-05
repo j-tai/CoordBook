@@ -326,6 +326,17 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         list(player, label, "edit", Arrays.copyOfRange(args, 2, args.length), true);
     }
 
+    private static List<String> generateCompletions(String[] args, Stream<String> candidates) {
+        String text = String.join(" ", args);
+        String right = args[args.length - 1].toLowerCase();
+        String left = text.substring(0, text.length() - args[args.length - 1].length());
+        return candidates
+                .filter(cand -> cand.startsWith(left))
+                .map(cand -> cand.substring(left.length()))
+                .filter(cand -> cand.toLowerCase().startsWith(right))
+                .collect(Collectors.toList());
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
         if (!(sender instanceof Player))
@@ -339,7 +350,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                         .filter(s -> s.toLowerCase().startsWith(partial))
                         .collect(Collectors.toList());
             }
-            default:
+            default: {
+                Book book = database.get(((Player) sender).getWorld().getName());
                 if ("list".equalsIgnoreCase(args[0])) {
                     return Collections.emptyList();
                 } else if ("edit".equalsIgnoreCase(args[0])) {
@@ -350,30 +362,23 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     int arrowIndex = Arrays.asList(args).indexOf("→");
                     if (arrowIndex == -1) {
                         // Complete the first argument or the arrow
-                        String partial = String.join(" ", Arrays.copyOfRange(args, 1, args.length))
-                                .toLowerCase();
-                        return database.get(((Player) sender).getWorld().getName())
-                                .getNames()
-                                .stream()
-                                .map(name -> name + " →")
-                                .filter(arg -> arg.toLowerCase().startsWith(partial))
-                                .collect(Collectors.toList());
+                        return generateCompletions(
+                                Arrays.copyOfRange(args, 1, args.length),
+                                book.getNames().stream().map(name -> name + " →")
+                        );
                     } else {
                         // The arrow is already there -- just let the user type the new name
                         return Collections.emptyList();
                     }
                 } else if ("remove".equalsIgnoreCase(args[0])) {
-                    String world = ((Player) sender).getWorld().getName();
-                    String partial = String.join(" ", Arrays.copyOfRange(args, 1, args.length))
-                            .toLowerCase();
-                    return database.get(world)
-                            .getNames()
-                            .stream()
-                            .filter(arg -> arg.toLowerCase().startsWith(partial))
-                            .collect(Collectors.toList());
+                    return generateCompletions(
+                            Arrays.copyOfRange(args, 1, args.length),
+                            book.getNames().stream()
+                    );
                 } else {
                     return Collections.emptyList();
                 }
+            }
         }
     }
 }
