@@ -52,6 +52,15 @@ public class Book {
         return map.entrySet();
     }
 
+    public void rename(String from, String to) {
+        Entry entry = map.get(from);
+        if (entry == null)
+            throw new IllegalArgumentException("No such entry '" + from + "'");
+        dirty = true;
+        map.remove(from);
+        map.put(to, entry);
+    }
+
     public List<String> getPinned() {
         return pinned;
     }

@@ -47,6 +47,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 list(player, label, subcommand, subargs, true);
             else if ("add".equals(subcommand))
                 add(player, label, subargs);
+            else if ("rename".equals(subcommand))
+                rename(player, label, subargs);
             else if ("remove".equals(subcommand))
                 remove(player, label, subargs);
             else if ("toggle-pin".equals(subcommand))
@@ -254,6 +256,34 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.GREEN + "Removed the entry '" + name + "'.");
     }
 
+    private void rename(Player player, String label, String[] args) {
+        int arrowIndex = Arrays.asList(args).indexOf("→");
+        if (arrowIndex == -1 || arrowIndex == 0 || arrowIndex == args.length - 1) {
+            help(player, label);
+            return;
+        }
+        if (!checkPermission(player, "coordbook.rename"))
+            return;
+        String from = String.join(" ", Arrays.copyOfRange(args, 0, arrowIndex));
+        String to = String.join(" ", Arrays.copyOfRange(args, arrowIndex + 1, args.length));
+        Book book = database.get(player.getWorld().getName());
+        Entry entry = book.get(from);
+        if (entry == null) {
+            player.sendMessage(ChatColor.RED + "The entry '" + from + "' does not exist.");
+            return;
+        }
+        if (book.has(to)) {
+            player.sendMessage(ChatColor.RED + "The entry '" + to + "' already exists.");
+            return;
+        }
+        if (!entry.getAuthor().equals(player.getUniqueId())) {
+            if (!checkPermission(player, "coordbook.rename.other"))
+                return;
+        }
+        book.rename(from, to);
+        player.sendMessage(ChatColor.GREEN + "Renamed the entry '" + from + "' to '" + to + "'.");
+    }
+
     private void togglePin(Player player, String label, String[] args) {
         if (args.length < 2) {
             help(player, label);
@@ -305,7 +335,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 throw new AssertionError("Unreachable code");
             case 1: {
                 String partial = args[0].toLowerCase();
-                return Stream.of("list", "edit", "add", "remove")
+                return Stream.of("list", "edit", "add", "rename", "remove")
                         .filter(s -> s.toLowerCase().startsWith(partial))
                         .collect(Collectors.toList());
             }
@@ -316,6 +346,22 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     return Collections.emptyList();
                 } else if ("add".equalsIgnoreCase(args[0])) {
                     return Collections.emptyList();
+                } else if ("rename".equalsIgnoreCase(args[0])) {
+                    int arrowIndex = Arrays.asList(args).indexOf("→");
+                    if (arrowIndex == -1) {
+                        // Complete the first argument or the arrow
+                        String partial = String.join(" ", Arrays.copyOfRange(args, 1, args.length))
+                                .toLowerCase();
+                        return database.get(((Player) sender).getWorld().getName())
+                                .getNames()
+                                .stream()
+                                .map(name -> name + " →")
+                                .filter(arg -> arg.toLowerCase().startsWith(partial))
+                                .collect(Collectors.toList());
+                    } else {
+                        // The arrow is already there -- just let the user type the new name
+                        return Collections.emptyList();
+                    }
                 } else if ("remove".equalsIgnoreCase(args[0])) {
                     String world = ((Player) sender).getWorld().getName();
                     String partial = String.join(" ", Arrays.copyOfRange(args, 1, args.length))
