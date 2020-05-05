@@ -59,6 +59,10 @@ public class Book {
         dirty = true;
         map.remove(from);
         map.put(to, entry);
+        if (entry.isPinned()) {
+            int index = pinned.indexOf(from);
+            pinned.set(index, to);
+        }
     }
 
     public List<String> getPinned() {
