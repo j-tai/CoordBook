@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -45,6 +46,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 list(player, label, subcommand, subargs, false);
             else if ("edit".equals(subcommand))
                 list(player, label, subcommand, subargs, true);
+            else if ("search".equals(subcommand))
+                search(player, label, subcommand, subargs);
             else if ("add".equals(subcommand))
                 add(player, label, subargs);
             else if ("rename".equals(subcommand))
@@ -73,8 +76,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.RED + "Usage:");
         player.sendMessage(ChatColor.RED + "    /" + label + " [list]");
         player.sendMessage(ChatColor.RED + "    /" + label + " edit");
+        player.sendMessage(ChatColor.RED + "    /" + label + " search NAME");
         player.sendMessage(ChatColor.RED + "    /" + label + " add NAME");
-        player.sendMessage(ChatColor.RED + "    /" + label + " remove NAME");
     }
 
     private static TextComponent colored(ChatColor color, String text) {
@@ -95,6 +98,10 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
     }
 
     private void list(Player player, String label, String sublabel, String[] args, boolean showEditButtons) {
+        list(player, label, sublabel, args, showEditButtons, ent -> true);
+    }
+
+    private void list(Player player, String label, String sublabel, String[] args, boolean showEditButtons, Predicate<? super String> filter) {
         Book book = database.get(player.getWorld().getName());
         if (book.isEmpty()) {
             player.sendMessage(ChatColor.YELLOW + "This world's coordinate book is empty.");
@@ -117,40 +124,46 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         {
             BaseComponent heading = new TextComponent("----- Coordinate Book ");
             heading.setColor(ChatColor.GOLD);
-            BaseComponent leftArrow = new TextComponent("←");
-            if (page != 0) {
-                leftArrow.setColor(ChatColor.AQUA);
-                String prevPageCommand = "/" + label + " " + sublabel + " " + page;
-                leftArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, prevPageCommand));
-                leftArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                        new TextComponent[]{new TextComponent("Go to the previous page")}));
-            } else {
-                leftArrow.setColor(ChatColor.GRAY);
+            if (sublabel != null) {
+                BaseComponent leftArrow = new TextComponent("←");
+                if (page != 0) {
+                    leftArrow.setColor(ChatColor.AQUA);
+                    String prevPageCommand = "/" + label + " " + sublabel + " " + page;
+                    leftArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, prevPageCommand));
+                    leftArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            new TextComponent[]{new TextComponent("Go to the previous page")}));
+                } else {
+                    leftArrow.setColor(ChatColor.GRAY);
+                }
+                heading.addExtra(leftArrow);
+                heading.addExtra(" " + (page + 1) + "/" + totalPages + " ");
+                BaseComponent rightArrow = new TextComponent("→");
+                if (page != totalPages - 1) {
+                    rightArrow.setColor(ChatColor.AQUA);
+                    String nextPageCommand = "/" + label + " " + sublabel + " " + (page + 2);
+                    rightArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, nextPageCommand));
+                    rightArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            new TextComponent[]{new TextComponent("Go to the next page")}));
+                } else {
+                    rightArrow.setColor(ChatColor.GRAY);
+                }
+                heading.addExtra(rightArrow);
+                heading.addExtra(" ");
             }
-            heading.addExtra(leftArrow);
-            heading.addExtra(" " + (page + 1) + "/" + totalPages + " ");
-            BaseComponent rightArrow = new TextComponent("→");
-            if (page != totalPages - 1) {
-                rightArrow.setColor(ChatColor.AQUA);
-                String nextPageCommand = "/" + label + " " + sublabel + " " + (page + 2);
-                rightArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, nextPageCommand));
-                rightArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                        new TextComponent[]{new TextComponent("Go to the next page")}));
-            } else {
-                rightArrow.setColor(ChatColor.GRAY);
-            }
-            heading.addExtra(rightArrow);
-            heading.addExtra(" -----");
+            heading.addExtra("-----");
             player.spigot().sendMessage(heading);
         }
 
         Location location = player.getLocation();
 
         List<String> entries = Stream.concat(
-                book.getPinned().stream(),
+                book.getPinned()
+                        .stream()
+                        .filter(name -> filter.test(name)),
                 book.getEntries()
                         .stream()
                         .filter(ent -> !ent.getValue().isPinned())
+                        .filter(ent -> filter.test(ent.getKey()))
                         .sorted((left, right) -> {
                             Location leftLoc = left.getValue().toLocation(location.getWorld());
                             Location rightLoc = right.getValue().toLocation(location.getWorld());
@@ -215,6 +228,11 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
             msg.addExtra(colored(ChatColor.DARK_RED, ")"));
             player.spigot().sendMessage(msg);
         }
+    }
+
+    private void search(Player player, String label, String subcommand, String[] args) {
+        list(player, label, null, new String[]{}, false,
+                name -> Arrays.stream(args).allMatch(word -> name.toLowerCase().contains(word.toLowerCase())));
     }
 
     private void add(Player player, String label, String[] args) {
@@ -346,7 +364,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 throw new AssertionError("Unreachable code");
             case 1: {
                 String partial = args[0].toLowerCase();
-                return Stream.of("list", "edit", "add", "rename", "remove")
+                return Stream.of("list", "edit", "search", "add", "rename", "remove")
                         .filter(s -> s.toLowerCase().startsWith(partial))
                         .collect(Collectors.toList());
             }
