@@ -5,6 +5,7 @@ import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -131,7 +132,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     String prevPageCommand = "/" + label + " " + sublabel + " " + page;
                     leftArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, prevPageCommand));
                     leftArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new TextComponent[]{new TextComponent("Go to the previous page")}));
+                            new Text("Go to the previous page")));
                 } else {
                     leftArrow.setColor(ChatColor.GRAY);
                 }
@@ -143,7 +144,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     String nextPageCommand = "/" + label + " " + sublabel + " " + (page + 2);
                     rightArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, nextPageCommand));
                     rightArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new TextComponent[]{new TextComponent("Go to the next page")}));
+                            new Text("Go to the next page")));
                 } else {
                     rightArrow.setColor(ChatColor.GRAY);
                 }
@@ -179,14 +180,14 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 // Delete button
                 BaseComponent deleteButton = colored(ChatColor.RED, "x");
                 deleteButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                        new TextComponent[]{new TextComponent("Delete entry")}));
+                        new Text("Delete entry")));
                 deleteButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
                         "/" + label + " remove " + name));
                 msg.addExtra(deleteButton);
                 // Pin button
                 BaseComponent pinButton = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.DARK_GRAY, "+");
                 pinButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                        new TextComponent[]{new TextComponent(entry.isPinned() ? "Unpin entry" : "Pin entry")}));
+                        new Text(entry.isPinned() ? "Unpin entry" : "Pin entry")));
                 pinButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                         "/" + label + " toggle-pin " + (page + 1) + " " + name));
                 msg.addExtra(pinButton);
@@ -215,7 +216,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
             if (author == null)
                 author = entry.getAuthor().toString(); // Display the raw UUID
             msgName.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    new TextComponent[]{new TextComponent("Added by " + author)}));
+                    new Text("Added by " + author)));
             msg.addExtra(msgName);
             // Coordinates
             msg.addExtra(": ");
