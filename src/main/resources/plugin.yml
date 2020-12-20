@@ -1,7 +1,7 @@
 name: CoordBook
 author: James Tai
 version: @version@
-main: ca.jtai.coordbook.CoordBook
+main: ca.jtai.coordbook.Main
 api-version: 1.16
 description: Coordinate book
 
