@@ -132,7 +132,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     String prevPageCommand = "/" + label + " " + sublabel + " " + page;
                     leftArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, prevPageCommand));
                     leftArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new Text("Go to the previous page")));
+                        new Text("Go to the previous page")));
                 } else {
                     leftArrow.setColor(ChatColor.GRAY);
                 }
@@ -144,7 +144,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     String nextPageCommand = "/" + label + " " + sublabel + " " + (page + 2);
                     rightArrow.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, nextPageCommand));
                     rightArrow.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new Text("Go to the next page")));
+                        new Text("Go to the next page")));
                 } else {
                     rightArrow.setColor(ChatColor.GRAY);
                 }
@@ -158,19 +158,19 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         Location location = player.getLocation();
 
         List<String> entries = Stream.concat(
-                book.getPinned()
-                        .stream()
-                        .filter(name -> filter.test(name)),
-                book.getEntries()
-                        .stream()
-                        .filter(ent -> !ent.getValue().isPinned())
-                        .filter(ent -> filter.test(ent.getKey()))
-                        .sorted((left, right) -> {
-                            Location leftLoc = left.getValue().toLocation(location.getWorld());
-                            Location rightLoc = right.getValue().toLocation(location.getWorld());
-                            return Double.compare(location.distanceSquared(leftLoc), location.distanceSquared(rightLoc));
-                        })
-                        .map(Map.Entry::getKey)
+            book.getPinned()
+                .stream()
+                .filter(filter),
+            book.getEntries()
+                .stream()
+                .filter(ent -> !ent.getValue().isPinned())
+                .filter(ent -> filter.test(ent.getKey()))
+                .sorted((left, right) -> {
+                    Location leftLoc = left.getValue().toLocation(location.getWorld());
+                    Location rightLoc = right.getValue().toLocation(location.getWorld());
+                    return Double.compare(location.distanceSquared(leftLoc), location.distanceSquared(rightLoc));
+                })
+                .map(Map.Entry::getKey)
         ).collect(Collectors.toList());
         for (int i = page * ENTRIES_PER_PAGE; i < Math.min((page + 1) * ENTRIES_PER_PAGE, entries.size()); i++) {
             String name = entries.get(i);
@@ -180,30 +180,30 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                 // Delete button
                 BaseComponent deleteButton = colored(ChatColor.RED, "x");
                 deleteButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                        new Text("Delete entry")));
+                    new Text("Delete entry")));
                 deleteButton.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                        "/" + label + " remove " + name));
+                    "/" + label + " remove " + name));
                 msg.addExtra(deleteButton);
                 // Pin button
                 BaseComponent pinButton = colored(entry.isPinned() ? ChatColor.GREEN : ChatColor.DARK_GRAY, "+");
                 pinButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                        new Text(entry.isPinned() ? "Unpin entry" : "Pin entry")));
+                    new Text(entry.isPinned() ? "Unpin entry" : "Pin entry")));
                 pinButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                        "/" + label + " toggle-pin " + (page + 1) + " " + name));
+                    "/" + label + " toggle-pin " + (page + 1) + " " + name));
                 msg.addExtra(pinButton);
                 // Up/down arrows to change order of pinned
                 if (entry.isPinned()) {
                     BaseComponent upButton = colored(i == 0 ? ChatColor.DARK_GRAY : ChatColor.AQUA, "↑");
                     if (i != 0) {
                         upButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                                "/" + label + " swap-pin " + i + " " + (i - 1) + " " + String.join(" ", args)));
+                            "/" + label + " swap-pin " + i + " " + (i - 1) + " " + String.join(" ", args)));
                     }
                     msg.addExtra(upButton);
                     boolean isLastPinned = i == book.getPinned().size() - 1;
                     BaseComponent downButton = colored(isLastPinned ? ChatColor.DARK_GRAY : ChatColor.AQUA, "↓");
                     if (!isLastPinned) {
                         downButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                                "/" + label + " swap-pin " + i + " " + (i + 1) + " " + String.join(" ", args)));
+                            "/" + label + " swap-pin " + i + " " + (i + 1) + " " + String.join(" ", args)));
                     }
                     msg.addExtra(downButton);
                 }
@@ -216,7 +216,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
             if (author == null)
                 author = entry.getAuthor().toString(); // Display the raw UUID
             msgName.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    new Text("Added by " + author)));
+                new Text("Added by " + author)));
             msg.addExtra(msgName);
             // Coordinates
             msg.addExtra(": ");
@@ -233,7 +233,7 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
 
     private void search(Player player, String label, String subcommand, String[] args) {
         list(player, label, null, new String[]{}, false,
-                name -> Arrays.stream(args).allMatch(word -> name.toLowerCase().contains(word.toLowerCase())));
+            name -> Arrays.stream(args).allMatch(word -> name.toLowerCase().contains(word.toLowerCase())));
     }
 
     private void add(Player player, String label, String[] args) {
@@ -350,10 +350,10 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
         String right = args[args.length - 1].toLowerCase();
         String left = text.substring(0, text.length() - args[args.length - 1].length());
         return candidates
-                .filter(cand -> cand.startsWith(left))
-                .map(cand -> cand.substring(left.length()))
-                .filter(cand -> cand.toLowerCase().startsWith(right))
-                .collect(Collectors.toList());
+            .filter(cand -> cand.startsWith(left))
+            .map(cand -> cand.substring(left.length()))
+            .filter(cand -> cand.toLowerCase().startsWith(right))
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -366,8 +366,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
             case 1: {
                 String partial = args[0].toLowerCase();
                 return Stream.of("list", "edit", "search", "add", "rename", "remove")
-                        .filter(s -> s.toLowerCase().startsWith(partial))
-                        .collect(Collectors.toList());
+                    .filter(s -> s.toLowerCase().startsWith(partial))
+                    .collect(Collectors.toList());
             }
             default: {
                 Book book = database.get(((Player) sender).getWorld().getName());
@@ -382,8 +382,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     if (arrowIndex == -1) {
                         // Complete the first argument or the arrow
                         return generateCompletions(
-                                Arrays.copyOfRange(args, 1, args.length),
-                                book.getNames().stream().map(name -> name + " →")
+                            Arrays.copyOfRange(args, 1, args.length),
+                            book.getNames().stream().map(name -> name + " →")
                         );
                     } else {
                         // The arrow is already there -- just let the user type the new name
@@ -391,8 +391,8 @@ public class CoordBookCmd implements CommandExecutor, TabCompleter {
                     }
                 } else if ("remove".equalsIgnoreCase(args[0])) {
                     return generateCompletions(
-                            Arrays.copyOfRange(args, 1, args.length),
-                            book.getNames().stream()
+                        Arrays.copyOfRange(args, 1, args.length),
+                        book.getNames().stream()
                     );
                 } else {
                     return Collections.emptyList();

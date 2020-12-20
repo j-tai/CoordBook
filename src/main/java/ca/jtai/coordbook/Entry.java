@@ -74,10 +74,10 @@ public class Entry implements ConfigurationSerializable {
         if (o == null || getClass() != o.getClass()) return false;
         Entry entry = (Entry) o;
         return x == entry.x &&
-                y == entry.y &&
-                z == entry.z &&
-                dateAdded == entry.dateAdded &&
-                author.equals(entry.author);
+            y == entry.y &&
+            z == entry.z &&
+            dateAdded == entry.dateAdded &&
+            author.equals(entry.author);
     }
 
     @Override
@@ -98,12 +98,12 @@ public class Entry implements ConfigurationSerializable {
 
     public static Entry deserialize(Map<String, Object> map) {
         return new Entry(
-                (Integer) map.get("x"),
-                (Integer) map.get("y"),
-                (Integer) map.get("z"),
-                (Long) map.get("date"),
-                UUID.fromString((String) map.get("by")),
-                false
+            (Integer) map.get("x"),
+            (Integer) map.get("y"),
+            (Integer) map.get("z"),
+            (Long) map.get("date"),
+            UUID.fromString((String) map.get("by")),
+            false
         );
     }
 }
