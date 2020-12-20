@@ -1,14 +1,14 @@
 name: CoordBook
-version: 0.1.0
-author: 'James Tai'
-description: 'Coordinate book'
-main: ca.jtai.coordbook.Main
-api-version: 1.13
+author: James Tai
+version: @version@
+main: ca.jtai.coordbook.CoordBook
+api-version: 1.16
+description: Coordinate book
 
 commands:
   coordbook:
     description: Interact with the coordinate book.
-    usage: /coordbook [list|add|remove] ...
+    Usage: /coordbook [list|add|remove] ...
     aliases: [cb, cbook]
 
 permissions:
